@@ -137,6 +137,7 @@ jobs:
 
       - name: Build Flutter Linux
         run: |
+          flutter config --enable-linux-desktop
           flutter pub get
           flutter build linux --release
 
@@ -161,6 +162,7 @@ jobs:
 
       - name: Build Flutter macOS
         run: |
+          flutter config --enable-macos-desktop
           flutter pub get
           flutter build macos --release
 
