@@ -29,8 +29,9 @@ jobs:
         run: |
           cd go
           go mod download
-          go build -o /dev/null .
+          go build -o go_build_test .
           go vet ./...
+          rm -f go_build_test
 
   # Test Flutter code
   test-flutter:
@@ -95,9 +96,9 @@ jobs:
           mkdir -p installer_stage
           cp -r . installer_stage/
           mkdir -p installer_stage/assets
-          cp ../../../../windows/runner/resources/app_icon.ico installer_stage/ 2>/dev/null || true
+          cp ../../../../../windows/runner/resources/app_icon.ico installer_stage/ 2>/dev/null || true
           cd installer_stage
-          makensis -DRELEASE_BASE=${{ github.ref_name }} -DCONTENTS_DIR=. -DOUTPUT_DIR=. ../../../../../../installer/installer.nsi
+          makensis -DRELEASE_BASE=${{ github.ref_name }} -DCONTENTS_DIR=. -DOUTPUT_DIR=. ../../../../../installer/installer.nsi
           mv *.exe ../
 
       - name: Create zip package
