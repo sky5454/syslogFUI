@@ -7,8 +7,8 @@ on:
     branches: [main, master]
 
 env:
-  GO_VERSION: '1.21'
-  FLUTTER_VERSION: '3.24.0'
+  GO_VERSION: '1.26.2'
+  FLUTTER_VERSION: '3.41.7'
 
 jobs:
   # Test Go code
@@ -52,9 +52,24 @@ jobs:
       - name: Run Flutter tests
         run: flutter test
 
-  # Build Go binary (quick check)
-  build-go-quick:
+  # Build Go binary
+  build-go:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: go-linux-amd64
+            target: linux/amd64
+          - os: windows-latest
+            artifact_name: go-windows-amd64
+            target: windows/amd64
+          - os: macos-latest
+            artifact_name: go-macos-amd64
+            target: darwin/amd64
+          - os: macos-latest
+            artifact_name: go-macos-arm64
+            target: darwin/arm64
     steps:
       - uses: actions/checkout@v4
 
@@ -65,18 +80,20 @@ jobs:
           cache: true
 
       - name: Build Go
+        env:
+          GOOS: ${{ matrix.target }}
         run: |
           cd go
-          go build -ldflags="-s -w" -o syslog_viewer.exe .
+          go build -ldflags="-s -w" -o syslog_viewer .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: go-binary
-          path: go/syslog_viewer.exe
+          name: ${{ matrix.artifact_name }}
+          path: go/syslog_viewer
 
-  # Build Flutter Windows (quick check)
-  build-flutter-quick:
+  # Build Flutter Windows
+  build-flutter-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -96,5 +113,58 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: flutter-windows-quick
+          name: flutter-windows
           path: build/windows/x64/runner/Release/
+
+  # Build Flutter Linux
+  build-flutter-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libblkid-dev liblzma-dev
+
+      - name: Build Flutter Linux
+        run: |
+          flutter pub get
+          flutter build linux --release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-linux
+          path: build/linux/x64/release/bundle/
+
+  # Build Flutter macOS
+  build-flutter-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Build Flutter macOS
+        run: |
+          flutter pub get
+          flutter build macos --release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-macos
+          path: build/macos/Build/Products/Release/
