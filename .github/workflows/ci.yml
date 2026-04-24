@@ -86,10 +86,8 @@ jobs:
         run: |
           cp go/go_backend.exe build/windows/x64/runner/Release/
 
-      - name: Setup NSIS
-        uses: noriakit/download-nsis@v4
-        with:
-          version: '3.10'
+      - name: Install NSIS
+        run: choco install nsis -y
 
       - name: Build NSIS installer
         run: |
