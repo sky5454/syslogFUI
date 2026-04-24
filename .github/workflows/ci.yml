@@ -86,6 +86,22 @@ jobs:
         run: |
           cp go/go_backend.exe build/windows/x64/runner/Release/
 
+      - name: Setup NSIS
+        uses: noriakit/download-nsis@v4
+        with:
+          version: '3.10'
+
+      - name: Build NSIS installer
+        run: |
+          cd build/windows/x64/runner/Release
+          mkdir -p installer_stage
+          cp -r . installer_stage/
+          mkdir -p installer_stage/assets
+          cp ../../../../windows/runner/resources/app_icon.ico installer_stage/ 2>/dev/null || true
+          cd installer_stage
+          makensis -DRELEASE_BASE=${{ github.ref_name }} -DCONTENTS_DIR=. -DOUTPUT_DIR=. ../../../../../../installer/installer.nsi
+          mv *.exe ../
+
       - name: Create zip package
         run: |
           cd build/windows/x64/runner/Release
@@ -96,6 +112,12 @@ jobs:
         with:
           name: syslogfui_windows
           path: build/windows/x64/runner/Release/syslogfui_windows.zip
+
+      - name: Upload NSIS installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: syslogfui_windows_installer
+          path: build/windows/x64/runner/Release/syslogfui-*.exe
 
   # Build and bundle Linux
   build-linux:
@@ -210,6 +232,7 @@ jobs:
         run: |
           mkdir -p release
           cp artifacts/*.zip release/
+          ls artifacts/*.exe 2>/dev/null && cp artifacts/*.exe release/ || true
 
       - name: Create Linux package
         run: |
@@ -217,7 +240,7 @@ jobs:
 
       - name: Create macOS packages
         run: |
-          cp artifacts/syslogfui-*.dmg release/
+          cp artifacts/*.dmg release/
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v1
