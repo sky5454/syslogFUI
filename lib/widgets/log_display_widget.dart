@@ -96,7 +96,7 @@ class _LogDisplayWidgetState extends State<LogDisplayWidget> {
               Container(
                 height: 32,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                color: Colors.blue.withOpacity(0.2),
+                color: Colors.blue.withValues(alpha: 0.2),
                 child: Row(
                   children: [
                     Text(
@@ -172,13 +172,13 @@ class _LogEntryRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? Colors.blue.withOpacity(0.15)
+              ? Colors.blue.withValues(alpha: 0.15)
               : isSearchHighlight
-                  ? Colors.yellow.withOpacity(0.3)
+                  ? Colors.yellow.withValues(alpha: 0.3)
                   : null,
           border: Border(
             bottom: BorderSide(
-              color: Theme.of(context).dividerColor.withOpacity(0.3),
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
             ),
           ),
         ),
@@ -220,7 +220,7 @@ class _LogEntryRow extends StatelessWidget {
               width: 80,
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: severityColor.withOpacity(0.2),
+                color: severityColor.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(3),
               ),
               child: Text(

@@ -52,7 +52,7 @@ class AppTheme {
         headingRowColor: WidgetStateProperty.all(surfaceColor),
         dataRowColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.hovered)) {
-            return cardColor.withOpacity(0.8);
+            return cardColor.withValues(alpha: 0.8);
           }
           return Colors.transparent;
         }),

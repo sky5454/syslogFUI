@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:intl/intl.dart';
 import 'bloc/syslog_bloc.dart';
 import 'services/websocket_service.dart';
 import 'services/go_backend_service.dart';

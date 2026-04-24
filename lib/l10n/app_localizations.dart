@@ -170,5 +170,5 @@ class _AppLocalizationsDelegate
 }
 
 class _AppLocalizationsImpl extends AppLocalizations {
-  _AppLocalizationsImpl(Locale locale) : super(locale);
+  _AppLocalizationsImpl(super.locale);
 }
