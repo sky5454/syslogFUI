@@ -178,12 +178,11 @@ jobs:
 
       - name: Bundle Go backend
         run: |
-          find build/macos/Build/Products/Release/ -name "syslog_viewer.app" -type d -exec cp go/go_backend "{}/Contents/MacOS/" \;
+          cp go/go_backend "build/macos/Build/Products/Release/syslogfui.app/Contents/MacOS/"
 
       - name: Create DMG
         run: |
-          out_dir="build/macos/Build/Products/Release"
-          app_path=$(find "$out_dir" -name "syslog_viewer.app" -type d | head -1)
+          app_path="build/macos/Build/Products/Release/syslogfui.app"
           stage_dir=$(mktemp -d)
           cp -R "$app_path" "$stage_dir/"
           ln -s /Applications "$stage_dir/Applications"
