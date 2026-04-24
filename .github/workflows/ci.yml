@@ -84,7 +84,7 @@ jobs:
 
       - name: Bundle Go backend
         run: |
-          cp go_backend.exe build/windows/x64/runner/Release/
+          cp go/go_backend.exe build/windows/x64/runner/Release/
 
       - name: Create zip package
         run: |
@@ -133,7 +133,7 @@ jobs:
 
       - name: Bundle Go backend
         run: |
-          cp go_backend build/linux/x64/release/bundle/
+          cp go/go_backend build/linux/x64/release/bundle/
 
       - name: Create tar.gz package
         run: |
@@ -176,7 +176,7 @@ jobs:
 
       - name: Bundle Go backend
         run: |
-          cp go_backend build/macos/Build/Products/Release/*/syslog_viewer.app/Contents/MacOS/
+          cp go/go_backend build/macos/Build/Products/Release/*/syslog_viewer.app/Contents/MacOS/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -211,6 +211,16 @@ jobs:
         run: |
           flutter pub get
           flutter build macos --release
+
+      - name: Bundle Go backend
+        run: |
+          cp go/go_backend build/macos/Build/Products/Release/*/syslog_viewer.app/Contents/MacOS/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: syslogfui_macos_silicon
+          path: build/macos/Build/Products/Release/
 
       - name: Bundle Go backend
         run: |
