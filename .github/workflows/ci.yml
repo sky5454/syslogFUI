@@ -146,21 +146,33 @@ jobs:
           name: syslogfui_linux
           path: syslogfui_linux.tar.gz
 
-  # Build and bundle macOS Intel
-  build-macos-intel:
+  # Build and bundle macOS
+  build-macos:
     runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            name: intel
+            artifact: SyslogFUI_intel
+          - arch: arm64
+            name: silicon
+            artifact: SyslogFUI_apple_silicon
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install create-dmg
+        run: brew install create-dmg
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Build Go backend (Intel)
+      - name: Build Go backend
         run: |
           cd go
-          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o go_backend .
+          CGO_ENABLED=0 GOOS=darwin GOARCH=${{ matrix.arch }} go build -ldflags="-s -w" -o go_backend .
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -178,46 +190,52 @@ jobs:
         run: |
           find build/macos/Build/Products/Release/ -name "syslog_viewer.app" -type d -exec cp go/go_backend "{}/Contents/MacOS/" \;
 
+      - name: Create DMG
+        run: |
+          app_path=$(find build/macos/Build/Products/Release/ -name "syslog_viewer.app" -type d | head -1)
+          create-dmg \
+            --volname "${{ matrix.artifact }}" \
+            --window-pos 200 120 \
+            --size 200 \
+            --app-drop-link 560 120 \
+            "${{ matrix.artifact }}.dmg" \
+            "$app_path"
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: syslogfui_macos_intel
-          path: build/macos/Build/Products/Release/
+          name: macos-${{ matrix.name }}
+          path: ${{ matrix.artifact }}.dmg
 
-  # Build and bundle macOS Apple Silicon
-  build-macos-silicon:
-    runs-on: macos-latest
+  # Create GitHub Release
+  release:
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
         with:
-          go-version: ${{ env.GO_VERSION }}
+          path: artifacts
+          merge-multiple: true
 
-      - name: Build Go backend (Apple Silicon)
+      - name: Create Windows package
         run: |
-          cd go
-          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o go_backend .
+          mkdir -p release
+          cp artifacts/*.zip release/
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+      - name: Create Linux package
+        run: |
+          cp artifacts/*.tar.gz release/
+
+      - name: Create macOS packages
+        run: |
+          cp artifacts/*.dmg release/
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: 'stable'
-          cache: true
-
-      - name: Build Flutter macOS
-        run: |
-          flutter pub get
-          flutter build macos --release
-
-      - name: Bundle Go backend
-        run: |
-          find build/macos/Build/Products/Release/ -name "syslog_viewer.app" -type d -exec cp go/go_backend "{}/Contents/MacOS/" \;
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: syslogfui_macos_silicon
-          path: build/macos/Build/Products/Release/
+          files: release/*
+          draft: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
