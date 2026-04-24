@@ -138,13 +138,13 @@ jobs:
       - name: Create tar.gz package
         run: |
           cd build/linux/x64/release/bundle
-          tar -czf ../../../../syslogfui_linux.tar.gz .
+          tar -czf $GITHUB_WORKSPACE/syslogfui_linux.tar.gz .
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: syslogfui_linux
-          path: build/linux/x64/release/syslogfui_linux.tar.gz
+          path: syslogfui_linux.tar.gz
 
   # Build and bundle macOS Intel
   build-macos-intel:
@@ -176,7 +176,7 @@ jobs:
 
       - name: Bundle Go backend
         run: |
-          cp go/go_backend build/macos/Build/Products/Release/*/syslog_viewer.app/Contents/MacOS/
+          find build/macos/Build/Products/Release/ -name "syslog_viewer.app" -type d -exec cp go/go_backend "{}/Contents/MacOS/" \;
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -214,17 +214,7 @@ jobs:
 
       - name: Bundle Go backend
         run: |
-          cp go/go_backend build/macos/Build/Products/Release/*/syslog_viewer.app/Contents/MacOS/
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: syslogfui_macos_silicon
-          path: build/macos/Build/Products/Release/
-
-      - name: Bundle Go backend
-        run: |
-          cp go_backend build/macos/Build/Products/Release/*/syslog_viewer.app/Contents/MacOS/
+          find build/macos/Build/Products/Release/ -name "syslog_viewer.app" -type d -exec cp go/go_backend "{}/Contents/MacOS/" \;
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
