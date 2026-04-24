@@ -1,0 +1,55 @@
+{
+  "@@locale": "en",
+  "appTitle": "SyslogFUI",
+  "startServer": "Start Server",
+  "stopServer": "Stop Server",
+  "clearLogs": "Clear Logs",
+  "exportCsv": "Export CSV",
+  "autoScroll": "Auto-scroll",
+  "select": "Select",
+  "copy": "Copy",
+  "top": "Top",
+  "bottom": "Bottom",
+  "filters": "Filters",
+  "searchMessages": "Search messages...",
+  "severity": "Severity",
+  "facility": "Facility",
+  "resetFilters": "Reset Filters",
+  "noLogMessages": "No log messages yet",
+  "noMessagesMatchFilter": "No messages match the current filter",
+  "messages": "messages",
+  "shown": "shown",
+  "connected": "Connected",
+  "connecting": "Connecting...",
+  "disconnected": "Disconnected",
+  "error": "Error",
+  "localhost514Udp": "localhost:514 (UDP)",
+  "wsLocalhost8765Ws": "ws://localhost:8765/ws",
+  "syslogAddress": "Syslog Address",
+  "websocketUrl": "WebSocket URL",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "exportSuccessful": "Export successful",
+  "exportFailed": "Export failed",
+  "openFolder": "Open Folder",
+  "copiedLinesToClipboard": "Copied {count} lines to clipboard",
+  "@copiedLinesToClipboard": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selected": "{count} selected",
+  "@selected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clear": "Clear",
+  "filter": "Filter",
+  "highlight": "Highlight",
+  "of": "of"
+}

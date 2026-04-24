@@ -1,0 +1,55 @@
+{
+  "@@locale": "zh",
+  "appTitle": "SyslogFUI日志查看器",
+  "startServer": "启动服务器",
+  "stopServer": "停止服务器",
+  "clearLogs": "清除日志",
+  "exportCsv": "导出 CSV",
+  "autoScroll": "自动滚动",
+  "select": "选择",
+  "copy": "复制",
+  "top": "顶部",
+  "bottom": "底部",
+  "filters": "过滤器",
+  "searchMessages": "搜索消息...",
+  "severity": "严重级别",
+  "facility": "设施",
+  "resetFilters": "重置过滤器",
+  "noLogMessages": "暂无日志消息",
+  "noMessagesMatchFilter": "没有符合当前过滤条件的消息",
+  "messages": "条消息",
+  "shown": "显示",
+  "connected": "已连接",
+  "connecting": "连接中...",
+  "disconnected": "已断开",
+  "error": "错误",
+  "localhost514Udp": "localhost:514 (UDP)",
+  "wsLocalhost8765Ws": "ws://localhost:8765/ws",
+  "syslogAddress": "Syslog 地址",
+  "websocketUrl": "WebSocket URL",
+  "cancel": "取消",
+  "confirm": "确定",
+  "exportSuccessful": "导出成功",
+  "exportFailed": "导出失败",
+  "openFolder": "打开文件夹",
+  "copiedLinesToClipboard": "已复制 {count} 行到剪贴板",
+  "@copiedLinesToClipboard": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selected": "已选择 {count} 项",
+  "@selected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clear": "清除",
+  "filter": "过滤",
+  "highlight": "高亮",
+  "of": "/"
+}
