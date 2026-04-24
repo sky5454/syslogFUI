@@ -152,15 +152,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install create-dmg
-        run: brew install create-dmg
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Build Go backend (fat binary)
+      - name: Build Go backend
         run: |
           cd go
           CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o go_backend_amd64 .
@@ -185,14 +182,12 @@ jobs:
 
       - name: Create DMG
         run: |
-          app_path=$(find build/macos/Build/Products/Release/ -name "syslog_viewer.app" -type d | head -1)
-          create-dmg \
-            --volname "SyslogFUI" \
-            --window-pos 200 120 \
-            --window-size 200 150 \
-            --app-drop-link 560 120 \
-            "SyslogFUI.dmg" \
-            "$app_path"
+          out_dir="build/macos/Build/Products/Release"
+          app_path=$(find "$out_dir" -name "syslog_viewer.app" -type d | head -1)
+          stage_dir=$(mktemp -d)
+          cp -R "$app_path" "$stage_dir/"
+          ln -s /Applications "$stage_dir/Applications"
+          hdiutil create -volname "SyslogFUI" -srcfolder "$stage_dir" -ov -format UDZO "SyslogFUI.dmg"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -223,7 +218,7 @@ jobs:
 
       - name: Create macOS packages
         run: |
-          cp artifacts/*.dmg release/
+          cp artifacts/syslogfui-*.dmg release/
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v1
