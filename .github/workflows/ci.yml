@@ -186,13 +186,8 @@ jobs:
       - name: Create DMG
         run: |
           app_path=$(find build/macos/Build/Products/Release/ -name "syslog_viewer.app" -type d | head -1)
-          create-dmg \
-            --volname "SyslogFUI" \
-            --window-pos 200 120 \
-            --window-size 200 150 \
-            --app-drop-link 560 120 \
-            "SyslogFUI.dmg" \
-            "$app_path"
+          echo "Found app at: $app_path"
+          create-dmg --volname "SyslogFUI" "$app_path" "SyslogFUI.dmg"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
