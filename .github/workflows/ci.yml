@@ -3,6 +3,8 @@ name: CI
 on:
   push:
     branches: [main, master]
+    tags:
+      - 'v*'
   pull_request:
     branches: [main, master]
 
@@ -52,24 +54,9 @@ jobs:
       - name: Run Flutter tests
         run: flutter test
 
-  # Build Go binary
-  build-go:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - artifact_name: go-linux-amd64
-            GOOS: linux
-            GOARCH: amd64
-          - artifact_name: go-windows-amd64
-            GOOS: windows
-            GOARCH: amd64
-          - artifact_name: go-macos-amd64
-            GOOS: darwin
-            GOARCH: amd64
-          - artifact_name: go-macos-arm64
-            GOOS: darwin
-            GOARCH: arm64
+  # Build and bundle Windows
+  build-windows:
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -77,27 +64,11 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache: true
 
-      - name: Build Go
-        env:
-          GOOS: ${{ matrix.GOOS }}
-          GOARCH: ${{ matrix.GOARCH }}
+      - name: Build Go backend
         run: |
           cd go
-          go build -ldflags="-s -w" -o syslog_viewer .
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: go/syslog_viewer
-
-  # Build Flutter Windows
-  build-flutter-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
+          go build -ldflags="-s -w" -o go_backend.exe .
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -111,17 +82,36 @@ jobs:
           flutter pub get
           flutter build windows --release
 
-      - name: Upload artifact
+      - name: Bundle Go backend
+        run: |
+          cp go_backend.exe build/windows/x64/runner/Release/
+
+      - name: Create zip package
+        run: |
+          cd build/windows/x64/runner/Release
+          powershell Compress-Archive -Path * -DestinationPath syslogfui_windows.zip
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: flutter-windows
-          path: build/windows/x64/runner/Release/
+          name: syslogfui_windows
+          path: build/windows/x64/runner/Release/syslogfui_windows.zip
 
-  # Build Flutter Linux
-  build-flutter-linux:
+  # Build and bundle Linux
+  build-linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build Go backend
+        run: |
+          cd go
+          CGO_ENABLED=0 go build -ldflags="-s -w" -o go_backend .
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -141,17 +131,36 @@ jobs:
           flutter pub get
           flutter build linux --release
 
-      - name: Upload artifact
+      - name: Bundle Go backend
+        run: |
+          cp go_backend build/linux/x64/release/bundle/
+
+      - name: Create tar.gz package
+        run: |
+          cd build/linux/x64/release/bundle
+          tar -czf ../../../../syslogfui_linux.tar.gz .
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: flutter-linux
-          path: build/linux/x64/release/bundle/
+          name: syslogfui_linux
+          path: build/linux/x64/release/syslogfui_linux.tar.gz
 
-  # Build Flutter macOS
-  build-flutter-macos:
+  # Build and bundle macOS Intel
+  build-macos-intel:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build Go backend (Intel)
+        run: |
+          cd go
+          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o go_backend .
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -162,12 +171,53 @@ jobs:
 
       - name: Build Flutter macOS
         run: |
-          flutter config --enable-macos-desktop
           flutter pub get
           flutter build macos --release
 
-      - name: Upload artifact
+      - name: Bundle Go backend
+        run: |
+          cp go_backend build/macos/Build/Products/Release/*/syslog_viewer.app/Contents/MacOS/
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: flutter-macos
+          name: syslogfui_macos_intel
+          path: build/macos/Build/Products/Release/
+
+  # Build and bundle macOS Apple Silicon
+  build-macos-silicon:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build Go backend (Apple Silicon)
+        run: |
+          cd go
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o go_backend .
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Build Flutter macOS
+        run: |
+          flutter pub get
+          flutter build macos --release
+
+      - name: Bundle Go backend
+        run: |
+          cp go_backend build/macos/Build/Products/Release/*/syslog_viewer.app/Contents/MacOS/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: syslogfui_macos_silicon
           path: build/macos/Build/Products/Release/
