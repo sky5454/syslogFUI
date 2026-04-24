@@ -58,18 +58,18 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            artifact_name: go-linux-amd64
-            target: linux/amd64
-          - os: windows-latest
-            artifact_name: go-windows-amd64
-            target: windows/amd64
-          - os: macos-latest
-            artifact_name: go-macos-amd64
-            target: darwin/amd64
-          - os: macos-latest
-            artifact_name: go-macos-arm64
-            target: darwin/arm64
+          - artifact_name: go-linux-amd64
+            GOOS: linux
+            GOARCH: amd64
+          - artifact_name: go-windows-amd64
+            GOOS: windows
+            GOARCH: amd64
+          - artifact_name: go-macos-amd64
+            GOOS: darwin
+            GOARCH: amd64
+          - artifact_name: go-macos-arm64
+            GOOS: darwin
+            GOARCH: arm64
     steps:
       - uses: actions/checkout@v4
 
@@ -81,7 +81,8 @@ jobs:
 
       - name: Build Go
         env:
-          GOOS: ${{ matrix.target }}
+          GOOS: ${{ matrix.GOOS }}
+          GOARCH: ${{ matrix.GOARCH }}
         run: |
           cd go
           go build -ldflags="-s -w" -o syslog_viewer .
