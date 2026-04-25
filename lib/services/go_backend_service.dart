@@ -6,66 +6,24 @@ import 'package:path_provider/path_provider.dart';
 
 class GoBackendService {
   Process? _process;
-  static String get _assetName => 'go_backend.exe';
-  static String get _executableName => Platform.isWindows ? 'go_backend.exe' : 'go_backend';
 
   Future<String> _extractAsset() async {
-    try {
-      final ByteData data = await rootBundle.load('bin/$_assetName');
-      final Uint8List bytes = data.buffer.asUint8List();
+    final String exeName = Platform.isWindows ? 'go_backend.exe' : 'go_backend';
+    final ByteData data = await rootBundle.load('bin/$exeName');
+    final Uint8List bytes = data.buffer.asUint8List();
 
-      final tempDir = await getTemporaryDirectory();
-      final exePath = path.join(tempDir.path, _executableName);
-      final file = File(exePath);
-      await file.writeAsBytes(bytes);
+    final tempDir = await getTemporaryDirectory();
+    final exePath = path.join(tempDir.path, exeName);
+    await File(exePath).writeAsBytes(bytes);
 
-      debugPrint('Extracted Go backend to: $exePath');
-      return exePath;
-    } catch (e) {
-      debugPrint('Failed to extract asset: $e');
-      rethrow;
-    }
+    debugPrint('Extracted Go backend to: $exePath');
+    return exePath;
   }
 
   String _findExePath() {
-    debugPrint('=== Go Backend Service Debug ===');
-    debugPrint('Platform.resolvedExecutable: ${Platform.resolvedExecutable}');
-    debugPrint('Directory.current.path: ${Directory.current.path}');
-
-    final List<String> searchPaths = [];
-
-    if (Platform.resolvedExecutable.isNotEmpty) {
-      final exeDir = path.dirname(Platform.resolvedExecutable);
-      searchPaths.add(path.join(exeDir, _executableName));
-    }
-
-    final currentDirPath = path.join(Directory.current.path, _executableName);
-    searchPaths.add(currentDirPath);
-
-    var current = Directory.current.path;
-    for (int i = 0; i < 4; i++) {
-      final parentPath = path.join(current, _executableName);
-      searchPaths.add(parentPath);
-      final parent = path.dirname(current);
-      if (parent == current) break;
-      current = parent;
-    }
-
-    debugPrint('All search paths:');
-    for (final p in searchPaths) {
-      final exists = File(p).existsSync();
-      debugPrint('  $p - exists: $exists');
-    }
-
-    for (final exePath in searchPaths) {
-      if (File(exePath).existsSync()) {
-        debugPrint('Found executable at: $exePath');
-        return exePath;
-      }
-    }
-
-    debugPrint('WARNING: go_backend.exe not found');
-    return searchPaths.first;
+    final exeDir = path.dirname(Platform.resolvedExecutable);
+    final String exeName = Platform.isWindows ? 'go_backend.exe' : 'go_backend';
+    return path.join(exeDir, 'data', 'flutter_assets', 'bin', exeName);
   }
 
   Future<void> start() async {
