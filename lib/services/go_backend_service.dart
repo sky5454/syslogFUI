@@ -1,50 +1,61 @@
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 
 class GoBackendService {
   Process? _process;
   static const String _executableName = 'go_backend.exe';
+
+  Future<String> _extractAsset() async {
+    try {
+      final ByteData data = await rootBundle.load('bin/$_executableName');
+      final Uint8List bytes = data.buffer.asUint8List();
+
+      final tempDir = await getTemporaryDirectory();
+      final exePath = path.join(tempDir.path, _executableName);
+      final file = File(exePath);
+      await file.writeAsBytes(bytes);
+
+      debugPrint('Extracted Go backend to: $exePath');
+      return exePath;
+    } catch (e) {
+      debugPrint('Failed to extract asset: $e');
+      rethrow;
+    }
+  }
 
   String _findExePath() {
     debugPrint('=== Go Backend Service Debug ===');
     debugPrint('Platform.resolvedExecutable: ${Platform.resolvedExecutable}');
     debugPrint('Directory.current.path: ${Directory.current.path}');
 
-    // Try multiple possible locations
     final List<String> searchPaths = [];
 
-    // 1. Same directory as the main executable
     if (Platform.resolvedExecutable.isNotEmpty) {
       final exeDir = path.dirname(Platform.resolvedExecutable);
       searchPaths.add(path.join(exeDir, _executableName));
-      debugPrint('Added path (exe dir): ${path.join(exeDir, _executableName)}');
     }
 
-    // 2. Current working directory
     final currentDirPath = path.join(Directory.current.path, _executableName);
     searchPaths.add(currentDirPath);
-    debugPrint('Added path (current dir): $currentDirPath');
 
-    // 3. Parent directories of current directory
     var current = Directory.current.path;
     for (int i = 0; i < 4; i++) {
       final parentPath = path.join(current, _executableName);
       searchPaths.add(parentPath);
-      debugPrint('Added path (parent $i): $parentPath');
       final parent = path.dirname(current);
       if (parent == current) break;
       current = parent;
     }
 
-    // Print all search paths for debugging
     debugPrint('All search paths:');
     for (final p in searchPaths) {
       final exists = File(p).existsSync();
       debugPrint('  $p - exists: $exists');
     }
 
-    // Return first existing path
     for (final exePath in searchPaths) {
       if (File(exePath).existsSync()) {
         debugPrint('Found executable at: $exePath');
@@ -52,13 +63,23 @@ class GoBackendService {
       }
     }
 
-    debugPrint('WARNING: go_backend.exe not found, returning first search path');
-    // Return default path (will fail later)
+    debugPrint('WARNING: go_backend.exe not found');
     return searchPaths.first;
   }
 
   Future<void> start() async {
-    final exePath = _findExePath();
+    String exePath;
+
+    // Try to find existing exe first
+    final existingPath = _findExePath();
+    if (File(existingPath).existsSync()) {
+      exePath = existingPath;
+      debugPrint('Using existing executable: $exePath');
+    } else {
+      // Extract from asset
+      debugPrint('No existing executable found, extracting from asset...');
+      exePath = await _extractAsset();
+    }
 
     debugPrint('Starting Go backend from: $exePath');
 
