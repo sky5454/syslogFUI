@@ -85,38 +85,48 @@ jobs:
 
       - name: Bundle Go backend
         run: |
-          cp go/go_backend.exe build/windows/x64/runner/Release/
+          Copy-Item go/go_backend.exe build/windows/x64/runner/Release/
 
       - name: Install NSIS
         run: choco install nsis -y
 
       - name: Build NSIS installer
         run: |
-          cd build/windows/x64/runner/Release
-          mkdir -p installer_stage
-          cp -r . installer_stage/
-          mkdir -p installer_stage/assets
-          cp ../../../../../windows/runner/resources/app_icon.ico installer_stage/ 2>/dev/null || true
-          cd installer_stage
-          makensis -DRELEASE_BASE=${{ github.ref_name }} -DCONTENTS_DIR=. -DOUTPUT_DIR=. ../../../../../installer/installer.nsi
-          mv *.exe ../
+          $releaseDir = "$env:GITHUB_WORKSPACE/build/windows/x64/runner/Release"
+          $installerDir = "$env:GITHUB_WORKSPACE/installer"
+          $iconPath = "$env:GITHUB_WORKSPACE/windows/runner/resources/app_icon.ico"
+
+          Set-Location $releaseDir
+          Remove-Item -Recurse -Force installer_stage -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path installer_stage -Force | Out-Null
+          Copy-Item -Path ./* -Destination installer_stage/ -Recurse -Force
+          Copy-Item $iconPath installer_stage/ -Force -ErrorAction SilentlyContinue
+          Set-Location installer_stage
+          & makensis -DRELEASE_BASE="${{ github.ref_name }}" -DCONTENTS_DIR=. -DOUTPUT_DIR=. $installerDir/installer.nsi
+          Get-ChildItem -Path . -Filter "*.exe" | Move-Item -Destination $releaseDir/ -Force
 
       - name: Create zip package
         run: |
-          cd build/windows/x64/runner/Release
-          powershell Compress-Archive -Path * -DestinationPath syslogfui_windows.zip
+          Compress-Archive -Path "$env:GITHUB_WORKSPACE/build/windows/x64/runner/Release/*" -DestinationPath "$env:GITHUB_WORKSPACE/build/windows/x64/runner/Release/syslogfui_windows.zip" -Force
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: syslogfui_windows
-          path: build/windows/x64/runner/Release/syslogfui_windows.zip
+          path: ${{ github.workspace }}/build/windows/x64/runner/Release/syslogfui_windows.zip
+
+      - name: Rename NSIS installer
+        run: |
+          $installer = Get-ChildItem "$env:GITHUB_WORKSPACE/build/windows/x64/runner/Release" -Filter "syslogfui-*.exe" | Select-Object -First 1
+          if ($installer) {
+            Move-Item $installer.FullName "$env:GITHUB_WORKSPACE/build/windows/x64/runner/Release/syslogfui_windows_installer.exe"
+          }
 
       - name: Upload NSIS installer
         uses: actions/upload-artifact@v4
         with:
           name: syslogfui_windows_installer
-          path: build/windows/x64/runner/Release/syslogfui-*.exe
+          path: ${{ github.workspace }}/build/windows/x64/runner/Release/syslogfui_windows_installer.exe
 
   # Build and bundle Linux
   build-linux:
