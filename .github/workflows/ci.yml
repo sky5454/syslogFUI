@@ -246,3 +246,50 @@ jobs:
           draft: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Canary build on main branch push
+  canary:
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/canary/')
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Determine canary version
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/heads/main ]]; then
+            echo "version=canary-$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Windows package
+        run: |
+          mkdir -p release
+          cp artifacts/*.zip release/
+          ls artifacts/*.exe 2>/dev/null && cp artifacts/*.exe release/ || true
+
+      - name: Create Linux package
+        run: |
+          cp artifacts/*.tar.gz release/
+
+      - name: Create macOS packages
+        run: |
+          cp artifacts/*.dmg release/
+
+      - name: Upload canary release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release/*
+          prerelease: true
+          generate_release_notes: true
+          target: ${{ github.sha }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
