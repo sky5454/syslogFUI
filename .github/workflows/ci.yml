@@ -73,18 +73,20 @@ jobs:
           $iconPath = "$env:GITHUB_WORKSPACE/windows/runner/resources/app_icon.ico"
 
           Set-Location $releaseDir
-          Remove-Item -Recurse -Force installer_stage -ErrorAction SilentlyContinue
-          New-Item -ItemType Directory -Path installer_stage -Force | Out-Null
-          Get-ChildItem -Path . -Exclude installer_stage | Copy-Item -Destination installer_stage/ -Recurse -Force
-          Copy-Item $iconPath installer_stage/ -Force -ErrorAction SilentlyContinue
-          Set-Location installer_stage
+          $stageDir = $releaseDir + "\installer_stage"
+          $outputDir = $releaseDir + "\installer_output"
+          Remove-Item -Recurse -Force $stageDir -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force $outputDir -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
+          New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
+          Get-ChildItem -Path . -Exclude installer_stage,installer_output | Copy-Item -Destination $stageDir/ -Recurse -Force
+          Copy-Item $iconPath $stageDir/ -Force -ErrorAction SilentlyContinue
           $nsisPath = "C:\Program Files (x86)\NSIS\makensis.exe"
           if (-not (Test-Path $nsisPath)) { $nsisPath = "C:\Program Files\NSIS\makensis.exe" }
           $installerScript = $installerDir + "\installer.nsi"
-          $outputDir = $releaseDir + "\installer_output"
-          New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
           $releaseName = "${{ github.ref_name }}"
-          & $nsisPath -DRELEASE_BASE="$releaseName" -DCONTENTS_DIR=. -DOUTPUT_DIR=$outputDir $installerScript
+          $makensisArgs = "-DRELEASE_BASE=$releaseName", "-DCONTENTS_DIR=$stageDir", "-DOUTPUT_DIR=$outputDir", $installerScript
+          & $nsisPath $makensisArgs
           Copy-Item -Path "$outputDir\*.exe" -Destination $releaseDir/ -Force
 
       - name: Create zip package
