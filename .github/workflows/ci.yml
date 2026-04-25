@@ -75,18 +75,26 @@ jobs:
           Set-Location $releaseDir
           Remove-Item -Recurse -Force installer_stage -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Path installer_stage -Force | Out-Null
-          Get-ChildItem -Path . -Recurse -Depth 0 | Where-Object { $_.Name -ne 'installer_stage' } | Copy-Item -Destination installer_stage/ -Force
+          Get-ChildItem -Path . -Exclude installer_stage | Copy-Item -Destination installer_stage/ -Recurse -Force
           Copy-Item $iconPath installer_stage/ -Force -ErrorAction SilentlyContinue
           Set-Location installer_stage
           $nsisPath = "C:\Program Files (x86)\NSIS\makensis.exe"
           if (-not (Test-Path $nsisPath)) { $nsisPath = "C:\Program Files\NSIS\makensis.exe" }
           $installerScript = $installerDir + "\installer.nsi"
-          & $nsisPath -DRELEASE_BASE="${{ github.ref_name }}" "-DCONTENTS_DIR=." "-DOUTPUT_DIR=$releaseDir" "$installerScript"
-          Copy-Item -Path ./*.exe -Destination $releaseDir/ -Force
+          $outputDir = $releaseDir + "\installer_output"
+          New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
+          $releaseName = "${{ github.ref_name }}"
+          & $nsisPath -DRELEASE_BASE="$releaseName" -DCONTENTS_DIR=. -DOUTPUT_DIR=$outputDir $installerScript
+          Copy-Item -Path "$outputDir\*.exe" -Destination $releaseDir/ -Force
 
       - name: Create zip package
         run: |
-          Compress-Archive -Path "$env:GITHUB_WORKSPACE/build/windows/x64/runner/Release/*" -DestinationPath "$env:GITHUB_WORKSPACE/build/windows/x64/runner/Release/syslogfui_windows.zip" -Force
+          $releasePath = "$env:GITHUB_WORKSPACE/build/windows/x64/runner/Release"
+          $zipTemp = "$env:TEMP\syslogfui_release"
+          New-Item -ItemType Directory -Path $zipTemp -Force | Out-Null
+          Get-ChildItem -Path $releasePath -Exclude installer_stage,installer_output | Copy-Item -Destination $zipTemp -Recurse -Force
+          Compress-Archive -Path "$zipTemp\*" -DestinationPath "$releasePath/syslogfui_windows.zip" -Force
+          Remove-Item -Recurse -Force $zipTemp -ErrorAction SilentlyContinue
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
