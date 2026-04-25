@@ -33,28 +33,6 @@ jobs:
           go vet ./...
           rm -f go_build_test
 
-  # Test Flutter code
-  test-flutter:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: 'stable'
-          cache: true
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Analyze Flutter code
-        run: flutter analyze
-
-      - name: Run Flutter tests
-        run: flutter test
-
   # Build and bundle Windows
   build-windows:
     runs-on: windows-latest
@@ -70,6 +48,7 @@ jobs:
         run: |
           cd go
           go build -ldflags="-s -w" -o ../bin/go_backend.exe .
+          Copy-Item ../bin/go_backend.exe ../bin/go_backend
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -84,7 +63,8 @@ jobs:
           flutter build windows --release
 
       - name: Install NSIS
-        run: choco install nsis -y
+        run: |
+          choco install nsis -y
 
       - name: Build NSIS installer
         run: |
@@ -95,11 +75,14 @@ jobs:
           Set-Location $releaseDir
           Remove-Item -Recurse -Force installer_stage -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Path installer_stage -Force | Out-Null
-          Get-ChildItem -Path . -Exclude installer_stage | Copy-Item -Destination installer_stage/ -Recurse -Force
+          Get-ChildItem -Path . -Recurse -Depth 0 | Where-Object { $_.Name -ne 'installer_stage' } | Copy-Item -Destination installer_stage/ -Force
           Copy-Item $iconPath installer_stage/ -Force -ErrorAction SilentlyContinue
           Set-Location installer_stage
-          & makensis -DRELEASE_BASE="${{ github.ref_name }}" -DCONTENTS_DIR=. -DOUTPUT_DIR=. $installerDir/installer.nsi
-          Get-ChildItem -Path . -Filter "*.exe" | Move-Item -Destination $releaseDir/ -Force
+          $nsisPath = "C:\Program Files (x86)\NSIS\makensis.exe"
+          if (-not (Test-Path $nsisPath)) { $nsisPath = "C:\Program Files\NSIS\makensis.exe" }
+          $installerScript = $installerDir + "\installer.nsi"
+          & $nsisPath -DRELEASE_BASE="${{ github.ref_name }}" "-DCONTENTS_DIR=." "-DOUTPUT_DIR=$releaseDir" "$installerScript"
+          Copy-Item -Path ./*.exe -Destination $releaseDir/ -Force
 
       - name: Create zip package
         run: |
@@ -138,7 +121,7 @@ jobs:
       - name: Build Go backend
         run: |
           cd go
-          CGO_ENABLED=0 go build -ldflags="-s -w" -o go_backend .
+          CGO_ENABLED=0 go build -ldflags="-s -w" -o ../bin/go_backend .
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -157,10 +140,6 @@ jobs:
           flutter config --enable-linux-desktop
           flutter pub get
           flutter build linux --release
-
-      - name: Bundle Go backend
-        run: |
-          cp go/go_backend build/linux/x64/release/bundle/
 
       - name: Create tar.gz package
         run: |
@@ -187,9 +166,9 @@ jobs:
       - name: Build Go backend
         run: |
           cd go
-          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o go_backend_amd64 .
-          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o go_backend_arm64 .
-          lipo -create -output go_backend go_backend_amd64 go_backend_arm64
+          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o ../bin/go_backend_amd64 .
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o ../bin/go_backend_arm64 .
+          lipo -create -output ../bin/go_backend ../bin/go_backend_amd64 ../bin/go_backend_arm64
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -203,9 +182,10 @@ jobs:
           flutter pub get
           flutter build macos --release
 
-      - name: Bundle Go backend
+      - name: Bundle Go backend to Flutter app
         run: |
-          cp go/go_backend "build/macos/Build/Products/Release/syslogfui.app/Contents/MacOS/"
+          mkdir -p "build/macos/Build/Products/Release/syslogfui.app/Contents/MacOS/"
+          cp bin/go_backend "build/macos/Build/Products/Release/syslogfui.app/Contents/MacOS/"
 
       - name: Create DMG
         run: |

@@ -29,4 +29,4 @@ flutter:
   generate: false
   uses-material-design: true
   assets:
-    - bin/go_backend.exe
+    - bin/go_backend

@@ -6,11 +6,12 @@ import 'package:path_provider/path_provider.dart';
 
 class GoBackendService {
   Process? _process;
-  static const String _executableName = 'go_backend.exe';
+  static String get _assetName => 'go_backend.exe';
+  static String get _executableName => Platform.isWindows ? 'go_backend.exe' : 'go_backend';
 
   Future<String> _extractAsset() async {
     try {
-      final ByteData data = await rootBundle.load('bin/$_executableName');
+      final ByteData data = await rootBundle.load('bin/$_assetName');
       final Uint8List bytes = data.buffer.asUint8List();
 
       final tempDir = await getTemporaryDirectory();
