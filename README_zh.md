@@ -7,6 +7,8 @@
 
 ![alt text](docs/image.png)
 
+![gif pic](docs/syslogFUI.gif)
+
 ## 功能特性
 
 - 支持 UDP/TCP 协议接收实时 syslog

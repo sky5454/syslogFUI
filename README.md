@@ -7,6 +7,8 @@ A real-time syslog viewer desktop application with high-performance virtualized 
 
 ![alt text](docs/image.png)
 
+![gif pic](docs/syslogFUI.gif)
+
 ## Features
 
 - Real-time syslog reception via UDP/TCP
