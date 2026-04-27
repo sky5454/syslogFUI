@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:csv/csv.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/syslog_message.dart';
 import '../services/websocket_service.dart';
 import '../services/go_backend_service.dart';
@@ -19,9 +21,14 @@ class SyslogBloc extends Bloc<SyslogEvent, SyslogState> {
   SyslogBloc({
     required WebSocketService webSocketService,
     required GoBackendService goBackendService,
+    String? savedSyslogAddress,
+    String? savedWebsocketUrl,
   })  : _webSocketService = webSocketService,
         _goBackendService = goBackendService,
-        super(SyslogState()) {
+        super(SyslogState(
+          syslogAddress: savedSyslogAddress ?? '0.0.0.0:514',
+          websocketUrl: savedWebsocketUrl ?? 'ws://localhost:8765/ws',
+        )) {
     on<ConnectEvent>(_onConnect);
     on<DisconnectEvent>(_onDisconnect);
     on<ConnectionStatusChangedEvent>(_onConnectionStatusChanged);
@@ -44,7 +51,7 @@ class SyslogBloc extends Bloc<SyslogEvent, SyslogState> {
     emit(state.copyWith(connectionStatus: ConnectionStatus.connecting));
 
     try {
-      await _goBackendService.start();
+      await _goBackendService.start(state.syslogAddress);
 
       _messageSubscription?.cancel();
       _connectionSubscription?.cancel();
@@ -166,11 +173,22 @@ class SyslogBloc extends Bloc<SyslogEvent, SyslogState> {
     }
   }
 
-  void _onServerConfigChanged(ServerConfigChangedEvent event, Emitter<SyslogState> emit) {
+  Future<void> _onServerConfigChanged(ServerConfigChangedEvent event, Emitter<SyslogState> emit) async {
+    final newSyslogAddress = event.syslogAddress ?? state.syslogAddress;
+    final newWebsocketUrl = event.websocketUrl ?? state.websocketUrl;
+
     emit(state.copyWith(
-      syslogAddress: event.syslogAddress,
-      websocketUrl: event.websocketUrl,
+      syslogAddress: newSyslogAddress,
+      websocketUrl: newWebsocketUrl,
     ));
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('syslog_address', newSyslogAddress);
+      await prefs.setString('websocket_url', newWebsocketUrl);
+    } catch (e) {
+      debugPrint('Failed to save settings: $e');
+    }
   }
 
   void _onToggleMultiSelect(ToggleMultiSelectEvent event, Emitter<SyslogState> emit) {

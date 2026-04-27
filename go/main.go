@@ -16,7 +16,7 @@ import (
 
 var (
 	syslogProtocol = flag.String("protocol", "all", "Syslog protocol (udp, tcp, or all)")
-	syslogAddress  = flag.String("syslog", "localhost:514", "Syslog server address")
+	syslogAddress  = flag.String("syslog", "0.0.0.0:514", "Syslog server address")
 	httpAddress   = flag.String("http", "localhost:8765", "HTTP/WebSocket server address")
 	bufferSize    = flag.Int("buffer", 10000, "Message buffer size for replay")
 )

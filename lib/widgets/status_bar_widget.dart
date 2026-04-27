@@ -103,7 +103,7 @@ class StatusBarWidget extends StatelessWidget {
           controller: controller,
           decoration: InputDecoration(
             labelText: type == 'syslog' ? 'Syslog 地址' : 'WebSocket URL',
-            hintText: type == 'syslog' ? 'localhost:514' : 'ws://localhost:8765/ws',
+            hintText: type == 'syslog' ? '0.0.0.0:514' : 'ws://localhost:8765/ws',
           ),
         ),
         actions: [

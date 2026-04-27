@@ -26,7 +26,7 @@ class GoBackendService {
     return path.join(exeDir, 'data', 'flutter_assets', 'bin', exeName);
   }
 
-  Future<void> start() async {
+  Future<void> start(String syslogAddress) async {
     String exePath;
 
     // Try to find existing exe first
@@ -40,10 +40,10 @@ class GoBackendService {
       exePath = await _extractAsset();
     }
 
-    debugPrint('Starting Go backend from: $exePath');
+    debugPrint('Starting Go backend from: $exePath with syslog address: $syslogAddress');
 
     try {
-      _process = await Process.start(exePath, ['--syslog=localhost:514', '--protocol=all', '--http=localhost:8765']);
+      _process = await Process.start(exePath, ['--syslog=$syslogAddress', '--protocol=all', '--http=localhost:8765']);
 
       _process!.stderr.transform(const SystemEncoding().decoder).listen((data) {
         debugPrint('Go stderr: $data');

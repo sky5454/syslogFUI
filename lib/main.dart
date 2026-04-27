@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'bloc/syslog_bloc.dart';
 import 'services/websocket_service.dart';
 import 'services/go_backend_service.dart';
@@ -12,12 +13,28 @@ import 'widgets/status_bar_widget.dart';
 import 'bloc/syslog_event.dart';
 import 'l10n/app_localizations.dart';
 
-void main() {
-  runApp(const SyslogViewerApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final prefs = await SharedPreferences.getInstance();
+  final savedSyslogAddress = prefs.getString('syslog_address') ?? '0.0.0.0:514';
+  final savedWebsocketUrl = prefs.getString('websocket_url') ?? 'ws://localhost:8765/ws';
+
+  runApp(SyslogViewerApp(
+    savedSyslogAddress: savedSyslogAddress,
+    savedWebsocketUrl: savedWebsocketUrl,
+  ));
 }
 
 class SyslogViewerApp extends StatelessWidget {
-  const SyslogViewerApp({super.key});
+  final String savedSyslogAddress;
+  final String savedWebsocketUrl;
+
+  const SyslogViewerApp({
+    super.key,
+    required this.savedSyslogAddress,
+    required this.savedWebsocketUrl,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +54,8 @@ class SyslogViewerApp extends StatelessWidget {
         create: (context) => SyslogBloc(
           webSocketService: WebSocketService(),
           goBackendService: GoBackendService(),
+          savedSyslogAddress: savedSyslogAddress,
+          savedWebsocketUrl: savedWebsocketUrl,
         )..add(ConnectEvent()),
         child: const MainScreen(),
       ),

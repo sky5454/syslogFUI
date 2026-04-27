@@ -34,7 +34,7 @@ class SyslogState extends Equatable {
     this.errorMessage,
     this.severityCounts = const {},
     this.exportMessage,
-    this.syslogAddress = 'localhost:514',
+    this.syslogAddress = '0.0.0.0:514',
     this.websocketUrl = 'ws://localhost:8765/ws',
     this.isMultiSelectMode = false,
     this.selectedIndices = const [],
