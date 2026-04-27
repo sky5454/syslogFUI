@@ -21,6 +21,9 @@ void main() async {
   final savedSyslogAddress = prefs.getString('syslog_address') ?? '0.0.0.0:514';
   final savedWebsocketUrl = prefs.getString('websocket_url') ?? 'ws://localhost:8765/ws';
 
+  print('Loaded syslog_address from prefs: $savedSyslogAddress');
+  print('Loaded websocket_url from prefs: $savedWebsocketUrl');
+
   runApp(SyslogViewerApp(
     savedSyslogAddress: savedSyslogAddress,
     savedWebsocketUrl: savedWebsocketUrl,

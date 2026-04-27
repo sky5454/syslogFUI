@@ -14,6 +14,8 @@ import (
 	"syslog_viewer/channel"
 )
 
+const version = "1.0.0"
+
 var (
 	syslogProtocol = flag.String("protocol", "all", "Syslog protocol (udp, tcp, or all)")
 	syslogAddress  = flag.String("syslog", "0.0.0.0:514", "Syslog server address")
@@ -23,6 +25,8 @@ var (
 
 func main() {
 	flag.Parse()
+
+	log.Printf("Go backend version: %s", version)
 
 	msgChannel := channel.New(*bufferSize)
 

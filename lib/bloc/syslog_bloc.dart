@@ -49,6 +49,8 @@ class SyslogBloc extends Bloc<SyslogEvent, SyslogState> {
   Future<void> _onConnect(ConnectEvent event, Emitter<SyslogState> emit) async {
     emit(state.copyWith(connectionStatus: ConnectionStatus.connecting));
 
+    debugPrint('Connecting with syslog address: ${state.syslogAddress}');
+
     try {
       await goBackendService.start(state.syslogAddress);
 

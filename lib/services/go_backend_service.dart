@@ -44,14 +44,26 @@ class GoBackendService {
   Future<void> start(String syslogAddress) async {
     String exePath;
 
-    // Try to find existing exe first
+    // Check if exe exists in app directory
     final existingPath = _findExePath();
     if (File(existingPath).existsSync()) {
-      exePath = existingPath;
-      _addLog('[INFO] Using existing executable: $exePath');
+      // Check if this is a development build (flutter run)
+      // Development builds have "runner/Debug" or "runner/Release" in the path
+      final isDevBuild = existingPath.contains('runner/Debug') ||
+                         existingPath.contains('runner/Release');
+
+      if (isDevBuild) {
+        // flutter run: extract fresh binary from assets (which contains the latest go_backend.exe)
+        _addLog('[INFO] Flutter run detected, extracting fresh binary from assets...');
+        exePath = await _extractAsset();
+      } else {
+        // Installed/released build: use the packaged binary
+        exePath = existingPath;
+        _addLog('[INFO] Using installed executable: $exePath');
+      }
     } else {
-      // Extract from asset
-      _addLog('[INFO] No existing executable found, extracting from asset...');
+      // No existing binary found, extract from assets
+      _addLog('[INFO] Extracting Go backend from assets...');
       exePath = await _extractAsset();
     }
 
