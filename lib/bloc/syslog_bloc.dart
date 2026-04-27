@@ -12,7 +12,7 @@ import 'syslog_state.dart';
 
 class SyslogBloc extends Bloc<SyslogEvent, SyslogState> {
   final WebSocketService _webSocketService;
-  final GoBackendService _goBackendService;
+  final GoBackendService goBackendService;
   StreamSubscription<SyslogMessage>? _messageSubscription;
   StreamSubscription<bool>? _connectionSubscription;
   final List<SyslogMessage> _messages = [];
@@ -20,11 +20,10 @@ class SyslogBloc extends Bloc<SyslogEvent, SyslogState> {
 
   SyslogBloc({
     required WebSocketService webSocketService,
-    required GoBackendService goBackendService,
+    required this.goBackendService,
     String? savedSyslogAddress,
     String? savedWebsocketUrl,
   })  : _webSocketService = webSocketService,
-        _goBackendService = goBackendService,
         super(SyslogState(
           syslogAddress: savedSyslogAddress ?? '0.0.0.0:514',
           websocketUrl: savedWebsocketUrl ?? 'ws://localhost:8765/ws',
@@ -51,7 +50,7 @@ class SyslogBloc extends Bloc<SyslogEvent, SyslogState> {
     emit(state.copyWith(connectionStatus: ConnectionStatus.connecting));
 
     try {
-      await _goBackendService.start(state.syslogAddress);
+      await goBackendService.start(state.syslogAddress);
 
       _messageSubscription?.cancel();
       _connectionSubscription?.cancel();
@@ -81,24 +80,52 @@ class SyslogBloc extends Bloc<SyslogEvent, SyslogState> {
 
   Future<void> _onDisconnect(DisconnectEvent event, Emitter<SyslogState> emit) async {
     _webSocketService.disconnect();
-    await _goBackendService.stop();
+    await goBackendService.stop();
     emit(state.copyWith(connectionStatus: ConnectionStatus.disconnected));
   }
 
   void _onMessageReceived(MessageReceivedEvent event, Emitter<SyslogState> emit) {
-    _messages.add(event.message);
+    final newMessage = event.message;
+    _messages.add(newMessage);
 
     if (_messages.length > _maxMessages) {
       _messages.removeAt(0);
     }
 
-    final filtered = _applyFilters(_messages);
+    final passesFilter = _messagePassesFilter(newMessage, state.severityFilter, state.facilityFilter, state.searchQuery, state.isSearchHighlightMode);
+    final newFilteredMessages = passesFilter ? [...state.filteredMessages, newMessage] : state.filteredMessages;
+
+    final newCounts = Map<String, int>.from(state.severityCounts);
+    newCounts[newMessage.severity] = (newCounts[newMessage.severity] ?? 0) + 1;
 
     emit(state.copyWith(
-      messages: List.from(_messages),
-      filteredMessages: filtered,
-      severityCounts: _computeSeverityCounts(_messages),
+      messages: _messages,
+      filteredMessages: newFilteredMessages,
+      severityCounts: newCounts,
     ));
+  }
+
+  bool _messagePassesFilter(
+    SyslogMessage msg,
+    SeverityFilter severityFilter,
+    String? facilityFilter,
+    String? searchQuery,
+    bool isHighlightMode,
+  ) {
+    if (!severityFilter.contains(msg.severityCode)) {
+      return false;
+    }
+
+    if (facilityFilter != null && facilityFilter.isNotEmpty && msg.facility != facilityFilter) {
+      return false;
+    }
+
+    if (searchQuery != null && searchQuery.isNotEmpty && !isHighlightMode) {
+      final query = searchQuery.toLowerCase();
+      return msg.message.toLowerCase().contains(query) || msg.host.toLowerCase().contains(query);
+    }
+
+    return true;
   }
 
   void _onClearMessages(ClearMessagesEvent event, Emitter<SyslogState> emit) {
@@ -177,6 +204,8 @@ class SyslogBloc extends Bloc<SyslogEvent, SyslogState> {
     final newSyslogAddress = event.syslogAddress ?? state.syslogAddress;
     final newWebsocketUrl = event.websocketUrl ?? state.websocketUrl;
 
+    final wasConnected = state.connectionStatus == ConnectionStatus.connected;
+
     emit(state.copyWith(
       syslogAddress: newSyslogAddress,
       websocketUrl: newWebsocketUrl,
@@ -188,6 +217,12 @@ class SyslogBloc extends Bloc<SyslogEvent, SyslogState> {
       await prefs.setString('websocket_url', newWebsocketUrl);
     } catch (e) {
       debugPrint('Failed to save settings: $e');
+    }
+
+    if (wasConnected) {
+      _webSocketService.disconnect();
+      await goBackendService.stop();
+      add(ConnectEvent());
     }
   }
 
@@ -264,16 +299,6 @@ class SyslogBloc extends Bloc<SyslogEvent, SyslogState> {
     emit(state.copyWith(currentSearchIndex: state.filteredMessages.length - 1));
   }
 
-  List<SyslogMessage> _applyFilters(List<SyslogMessage> messages) {
-    return _applyFiltersWithParams(
-      messages,
-      state.severityFilter,
-      state.facilityFilter,
-      state.searchQuery,
-      isHighlightMode: state.isSearchHighlightMode,
-    );
-  }
-
   List<SyslogMessage> _applyFiltersWithParams(
     List<SyslogMessage> messages,
     SeverityFilter severityFilter,
@@ -302,19 +327,11 @@ class SyslogBloc extends Bloc<SyslogEvent, SyslogState> {
     }).toList();
   }
 
-  Map<String, int> _computeSeverityCounts(List<SyslogMessage> messages) {
-    final counts = <String, int>{};
-    for (final msg in messages) {
-      counts[msg.severity] = (counts[msg.severity] ?? 0) + 1;
-    }
-    return counts;
-  }
-
   @override
   Future<void> close() {
     _messageSubscription?.cancel();
     _connectionSubscription?.cancel();
-    _goBackendService.stop();
+    goBackendService.stop();
     _webSocketService.dispose();
     return super.close();
   }

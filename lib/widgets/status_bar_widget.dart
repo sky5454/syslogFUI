@@ -3,9 +3,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/syslog_bloc.dart';
 import '../bloc/syslog_event.dart';
 import '../bloc/syslog_state.dart';
+import 'log_panel_widget.dart';
 
 class StatusBarWidget extends StatelessWidget {
-  const StatusBarWidget({super.key});
+  final VoidCallback onConsoleLogsPressed;
+  final bool isConsoleLogsExpanded;
+
+  const StatusBarWidget({
+    super.key,
+    required this.onConsoleLogsPressed,
+    required this.isConsoleLogsExpanded,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +36,11 @@ class StatusBarWidget extends StatelessWidget {
                 icon: _getConnectionIcon(state.connectionStatus),
                 label: _getConnectionLabel(state.connectionStatus),
                 color: _getConnectionColor(state.connectionStatus),
+              ),
+              const VerticalDivider(indent: 6, endIndent: 6),
+              ConsoleLogsButton(
+                isExpanded: isConsoleLogsExpanded,
+                onPressed: onConsoleLogsPressed,
               ),
               const VerticalDivider(indent: 6, endIndent: 6),
               _StatusItem(

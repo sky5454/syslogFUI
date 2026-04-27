@@ -10,6 +10,7 @@ import 'widgets/toolbar_widget.dart';
 import 'widgets/log_display_widget.dart';
 import 'widgets/filter_panel_widget.dart';
 import 'widgets/status_bar_widget.dart';
+import 'widgets/log_panel_widget.dart';
 import 'bloc/syslog_event.dart';
 import 'l10n/app_localizations.dart';
 
@@ -63,26 +64,60 @@ class SyslogViewerApp extends StatelessWidget {
   }
 }
 
-class MainScreen extends StatelessWidget {
+class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  bool _showConsoleLogs = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: const [
-          ToolbarWidget(),
-          Expanded(
-            child: Row(
-              children: [
-                FilterPanelWidget(),
-                Expanded(
-                  child: LogDisplayWidget(),
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              ToolbarWidget(),
+              Expanded(
+                child: Row(
+                  children: [
+                    FilterPanelWidget(),
+                    Expanded(
+                      child: LogDisplayWidget(),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              StatusBarWidget(
+                onConsoleLogsPressed: () {
+                  setState(() {
+                    _showConsoleLogs = !_showConsoleLogs;
+                  });
+                },
+                isConsoleLogsExpanded: _showConsoleLogs,
+              ),
+            ],
           ),
-          StatusBarWidget(),
+          if (_showConsoleLogs)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 28,
+              child: ConsoleLogsPanel(
+                onClear: () {
+                  context.read<SyslogBloc>().goBackendService.clearLogs();
+                },
+                onClose: () {
+                  setState(() {
+                    _showConsoleLogs = false;
+                  });
+                },
+              ),
+            ),
         ],
       ),
     );
