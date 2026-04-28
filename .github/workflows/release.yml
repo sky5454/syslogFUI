@@ -141,6 +141,10 @@ jobs:
           cp dist/macos/go_backend syslogfui.app/Contents/MacOS/
           chmod +x syslogfui.app/Contents/MacOS/*
 
+      - name: Ad-hoc sign macOS app
+        run: |
+          codesign --force --deep --sign - "syslogfui.app"
+
       - name: Create DMG for ${{ matrix.arch }}
         run: |
           create-dmg \
