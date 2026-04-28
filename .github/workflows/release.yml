@@ -136,9 +136,10 @@ jobs:
 
       - name: Create macOS app bundle with Go backend for ${{ matrix.arch }}
         run: |
-          mkdir -p SyslogViewer.app/Contents/MacOS
-          cp dist/flutter/macos/Build/Products/Release/*/syslog_viewer.app/Contents/MacOS/ SyslogViewer.app/Contents/MacOS/ 2>/dev/null || true
-          cp dist/macos/go_backend SyslogViewer.app/Contents/MacOS/
+          mkdir -p syslogfui.app/Contents/MacOS
+          cp -R dist/flutter/macos/Build/Products/Release/*/syslogfui.app/Contents/MacOS/* syslogfui.app/Contents/MacOS/ 2>/dev/null || true
+          cp dist/macos/go_backend syslogfui.app/Contents/MacOS/
+          chmod +x syslogfui.app/Contents/MacOS/*
 
       - name: Create DMG for ${{ matrix.arch }}
         run: |
@@ -146,11 +147,11 @@ jobs:
             --volname "${{ matrix.artifact }}" \
             --window-pos 200 120 \
             --size 200 \
-            --icon "SyslogViewer.app" 160 120 \
+            --icon "syslogfui.app" 160 120 \
             --app-drop-link 560 120 \
-            --hide-extension "SyslogViewer.app" \
+            --hide-extension "syslogfui.app" \
             "${{ matrix.artifact }}.dmg" \
-            "SyslogViewer.app"
+            "syslogfui.app"
 
       - name: Upload DMG for ${{ matrix.arch }}
         uses: actions/upload-artifact@v4
