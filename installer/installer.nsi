@@ -1,4 +1,7 @@
-!include MUI2.nsh
+!include MUI2.nsi
+
+!define MUI_ICON "..\icon\syslogfui.ico"
+!define MUI_UNICON "..\icon\syslogfui.ico"
 Var IconPath
 
 !ifndef RELEASE_BASE
@@ -37,12 +40,15 @@ InstallDirRegKey HKLM "${REGKEY_UNINSTALL}" "InstallLocation"
 RequestExecutionLevel admin
 
 Function .onInit
+  ; Try D: drive first
   StrCpy $INSTDIR "${INSTALL_DIR_D}"
-  IfFileExists "${INSTALL_DIR_D}\*" 0 +3
+  IfFileExists "D:\*" 0 +2
     Goto done
+  ; D: doesn't exist, try C:
   StrCpy $INSTDIR "${INSTALL_DIR_C}"
-  IfFileExists "${INSTALL_DIR_C}\*" 0 +3
+  IfFileExists "C:\*" 0 +2
     Goto done
+  ; Both D: and C: unavailable, use Program Files
   StrCpy $INSTDIR "${INSTALL_DIR_PF}"
   done:
   StrCpy $R0 $mui.Header.Text

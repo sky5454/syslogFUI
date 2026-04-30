@@ -139,11 +139,11 @@ jobs:
           mkdir -p syslogfui.app/Contents/MacOS
           cp -R dist/flutter/macos/Build/Products/Release/*/syslogfui.app/Contents/MacOS/* syslogfui.app/Contents/MacOS/ 2>/dev/null || true
           cp dist/macos/go_backend syslogfui.app/Contents/MacOS/
-          chmod +x syslogfui.app/Contents/MacOS/*
+          chmod -R +x syslogfui.app/
 
       - name: Ad-hoc sign macOS app
         run: |
-          codesign --force --deep --sign - "syslogfui.app"
+          codesign --force --deep --sign - syslogfui.app
 
       - name: Create DMG for ${{ matrix.arch }}
         run: |
